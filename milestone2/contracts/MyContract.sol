@@ -8,8 +8,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 contract MyContract is IERC20 {
     using SafeMath for uint256;
 
-    mapping(address => uint256) addressTobalace;
-    mapping(address => mapping(address => amount)) addressAllowance;
+    mapping(address => uint256) public addressToBalance;
+    mapping(address => mapping(address => uint256)) public addressAllowance;
 
     uint256 private _totalSupply;
 
@@ -19,7 +19,7 @@ contract MyContract is IERC20 {
 
     modifier requiredAmountToPerformOperation(uint256 account, uint256 requiredPercentage) {
         uint256 memory requiredAmount = _totalSupply.mul(requiredPercentage).div(100);
-        require(requiredAmount <= );
+        require(requiredAmount);
         _;
     }
 
@@ -32,14 +32,14 @@ contract MyContract is IERC20 {
     }
 
     function balanceOf(address account) external view returns (uint256) {
-        return addressTobalace[account];
+        return addressToBalance[account];
     }
 
     function transfer(address to, uint256 value) external returns (bool) {
-        require(addressTobalace[msg.sender] >= value, "Insufficient funds on the account");
+        require(addressToBalance[msg.sender] >= value, "Insufficient funds on the account");
 
-        addressTobalace[msg.sender] = addressTobalace[msg.sender].sub(value);
-        addressTobalace[to] = addressTobalace[to].add(value);
+        addressToBalance[msg.sender] = addressToBalance[msg.sender].sub(value);
+        addressToBalance[to] = addressToBalance[to].add(value);
 
         emit Transfer(msg.sender, to, value);
         return true;
@@ -59,8 +59,8 @@ contract MyContract is IERC20 {
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
         require(addressAllowance[from][msg.sender] >= value, "Insufficient funds on the account");
 
-        addressTobalace[to] = addressTobalace[to].add(value);
-        addressTobalace[from] = addressTobalace[from].sub(value);
+        addressToBalance[to] = addressToBalance[to].add(value);
+        addressToBalance[from] = addressToBalance[from].sub(value);
         addressAllowance[from][msg.sender] = addressAllowance[from][msg.sender].sub(value);
 
         emit Transfer(from, to, value);
