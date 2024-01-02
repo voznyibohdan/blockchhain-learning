@@ -10,10 +10,11 @@ contract Token is Ownable, IERC20  {
     mapping(address => uint256) public addressToBalance;
     mapping(address => mapping(address => uint256)) public addressAllowance;
 
-    uint256 internal totalSupply;
-    uint256 internal minTokenAmount;
-    uint256 internal tokenPrice;
-    uint256 internal timeToVote;
+    uint256 public totalSupply;
+    uint256 public tokenPrice;
+    uint256 public timeToVote;
+    uint256 public feePercentage;
+    uint256 public etherPool;
 
     bool internal votingIsInProgress;
 
@@ -21,5 +22,14 @@ contract Token is Ownable, IERC20  {
         totalSupply = initialSupply;
         timeToVote = initialTimeToVote;
         tokenPrice = tokenPrice;
+    }
+
+    modifier onlyAfterVoting() {
+        require(voters[msg.sender], "Cant perform operation while voting is active");
+        _;
+    }
+
+    function _setFeePrice(uint256 newFeePercentage) private onlyOwner {
+        feePercentage = newFeePercentage;
     }
 }

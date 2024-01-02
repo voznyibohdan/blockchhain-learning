@@ -6,8 +6,9 @@ contract Voting is Token {
     uint256 public currentHighestTokenPrice;
 
     mapping(uint256 => uint256) public votingPriceWeight;
-    address[] public voters;
+    mapping(address => bool) public voters;
     uint256[] public proposedPrices;
+    address[] public votersList;
 
     event VotingStarted(uint256 startTime, uint256 endTime);
     event Voted(address indexed voter, uint256 price, uint256 votes);
@@ -15,6 +16,11 @@ contract Voting is Token {
 
     modifier canStartVoting() {
         require(!votingIsInProgress, "Voting already in progress");
+        _;
+    }
+
+    modifier canVote() {
+        require(!voters[msg.sender], "Already voted");
         _;
     }
 
@@ -31,13 +37,12 @@ contract Voting is Token {
         emit VotingStarted(block.timestamp, block.timestamp + timeToVote);
     }
 
-    function vote(uint256 price) external hasMinimumBalance(0.05) {
-        if (!votingPriceWeight[price]) {
-            proposedPrices.push(price);
-        }
+    function vote(uint256 price) external canVote hasMinimumBalance(0.05) {
+        if (!votingPriceWeight[price]) proposedPrices.push(price);
+        if (!voters[msg.sender]) votersList.push(msg.sender);
 
         votingPriceWeight[price] += addressToBalance[msg.sender];
-        voters.push(msg.sender);
+        voters[msg.sender] = true;
 
         if (votingPriceWeight[price] > votingPriceWeight[currentHighestTokenPrice]) {
             currentHighestTokenPrice = price;
@@ -58,12 +63,17 @@ contract Voting is Token {
     function _resetVotingState() private {
         currentHighestTokenPrice = 0;
 
-        for(uint256 i = 0; i < proposedPrices.length; i++) {
+        for (uint256 i = 0; i < proposedPrices.length; i++) {
             uint256 price = proposedPrices[i];
             votingPriceWeight[price] = 0;
         }
 
-        delete voters;
+        for (uint256 i = 0; i < votersList.length; i++) {
+            uint256 voter = votersList[i];
+            voters[voter] = 0;
+        }
+
+        delete votersList;
         delete proposedPrices;
     }
 }

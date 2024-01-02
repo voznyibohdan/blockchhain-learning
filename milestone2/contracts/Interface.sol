@@ -11,7 +11,7 @@ contract Interface is Token {
         return addressToBalance[account];
     }
 
-    function transfer(address to, uint256 value) external returns (bool) {
+    function transfer(address to, uint256 value) external onlyAfterVoting returns (bool) {
         require(addressToBalance[msg.sender] >= value, "Insufficient funds on the account");
 
         addressToBalance[msg.sender] = addressToBalance[msg.sender].sub(value);
