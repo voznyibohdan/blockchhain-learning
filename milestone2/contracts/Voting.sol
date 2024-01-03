@@ -1,79 +1,69 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
-import "./Token.sol";
+import "./MyToken.sol";
 
-contract Voting is Token {
-    uint256 public currentHighestTokenPrice;
+contract Voting is MyToken {
+    mapping(address => bool) private _voters;
+    mapping(uint256 => uint256) private _priceWeight;
 
-    mapping(uint256 => uint256) public votingPriceWeight;
-    mapping(address => bool) public voters;
-    uint256[] public proposedPrices;
-    address[] public votersList;
+    uint256[] private _proposedPrices;
+
+    uint256 private _leadingPrice;
+    uint256 private _votingEndTime;
+    uint256 private constant _timeToVote;
 
     event VotingStarted(uint256 startTime, uint256 endTime);
     event Voted(address indexed voter, uint256 price, uint256 votes);
     event VotingEnded(uint256 endTime, uint256 price);
 
-    modifier canStartVoting() {
-        require(!votingIsInProgress, "Voting already in progress");
-        _;
-    }
-
-    modifier canVote() {
-        require(!voters[msg.sender], "Already voted");
-        _;
-    }
-
     modifier hasMinimumBalance(uint256 percentage) {
-        require(
-            addressToBalance[msg.sender] >= (totalSupply * percentage),
-            "Insufficient balance to execute this function"
-        );
+        require(balances[msg.sender] >= (totalSupply * percentage), "Insufficient balance to execute this function");
         _;
     }
 
-    function startVoting() external canStartVoting hasMinimumBalance(0.1) {
-        votingIsInProgress = true;
-        emit VotingStarted(block.timestamp, block.timestamp + timeToVote);
+    function startVoting() external hasMinimumBalance(0.1) {
+        require(!isVotingInProgress, "Voting already in progress");
+
+        isVotingInProgress = true;
+        _votingEndTime = block.timestamp + _timeToVote;
+        emit VotingStarted(block.timestamp, _votingEndTime);
     }
 
-    function vote(uint256 price) external canVote hasMinimumBalance(0.05) {
-        if (!votingPriceWeight[price]) proposedPrices.push(price);
-        if (!voters[msg.sender]) votersList.push(msg.sender);
+    function vote(uint256 price) external canVote hasMinimumBalance(minTokenAmount) {
+        require(!_voters[msg.sender], "Already voted");
 
-        votingPriceWeight[price] += addressToBalance[msg.sender];
-        voters[msg.sender] = true;
+        if (!_priceWeight[price]) _proposedPrices.push(price);
+        if (!_voters[msg.sender]) votersList.push(msg.sender);
 
-        if (votingPriceWeight[price] > votingPriceWeight[currentHighestTokenPrice]) {
-            currentHighestTokenPrice = price;
+        _priceWeight[price] += _priceWeight[price].add(balances[msg.sender]);
+        _voters[msg.sender] = true;
+
+        if (_priceWeight[price] >= _priceWeight[_leadingPrice]) {
+            _leadingPrice = price;
         }
 
         emit Voted(msg.sender, price, addressToBalance[msg.sender]);
     }
 
     function endVoting() external onlyOwner {
-        require(block.timestamp > timeToVote, "Voting period not ended yet");
+        require(block.timestamp > _votingEndTime, "Voting period not ended yet");
 
-        tokenPrice = currentHighestTokenPrice;
-        emit VotingEnded(block.timestamp, currentHighestTokenPrice);
+        tokenPrice = _leadingPrice;
+        emit VotingEnded(block.timestamp, _leadingPrice);
 
-        _resetVotingState();
-    }
+        _leadingPrice = 0;
 
-    function _resetVotingState() private {
-        currentHighestTokenPrice = 0;
-
-        for (uint256 i = 0; i < proposedPrices.length; i++) {
-            uint256 price = proposedPrices[i];
-            votingPriceWeight[price] = 0;
+        for (uint256 i = 0; i < _proposedPrices.length; i++) {
+            uint256 price = _proposedPrices[i];
+            _priceWeight[price] = 0;
         }
 
         for (uint256 i = 0; i < votersList.length; i++) {
             uint256 voter = votersList[i];
-            voters[voter] = 0;
+            _voters[voter] = false;
         }
 
         delete votersList;
-        delete proposedPrices;
+        delete _proposedPrices;
     }
 }

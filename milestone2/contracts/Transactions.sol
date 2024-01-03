@@ -1,8 +1,8 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.19;
 
-import "./Token.sol";
+import "./MyToken.sol";
 
-contract Transactions is Token {
+contract Transactions is MyToken {
     event TokensSold(address indexed seller, uint256 amount);
 
     function buy(uint256 _tokenAmount) external payable onlyAfterVoting {
@@ -12,19 +12,19 @@ contract Transactions is Token {
         require(msg.value >= cost, "Insufficient funds sent");
 
         transfer(msg.sender, _tokenAmount);
-        etherPool += cost;
+        etherPool = etherPool.add(cost);
     }
 
     function sell(uint256 _tokenAmount) external payable onlyAfterVoting {
-        require(addressToBalance[msg.sender] >= _tokenAmount, "Insufficient tokens");
+        require(balances[msg.sender] >= _tokenAmount, "Insufficient tokens");
 
         (uint256 ethCost, uint256 fee) = calculateCost(_tokenAmount);
 
         uint256 cost = ethCost.add(fee);
         uint256 earned = ethCost.sub(fee);
 
-        etherPool -= cost;
-        addressToBalance[msg.sender] -= _tokenAmount;
+        etherPool = etherPool.sub(cost);
+        balances[msg.sender] -= _tokenAmount;
 
         payable(msg.sender).transfer(earned);
 
@@ -35,5 +35,10 @@ contract Transactions is Token {
         uint256 ethCost = _tokenAmount.mul(tokenPrice);
         uint256 fee = ethCost.mul(feePercentage).div(100);
         return (ethCost, fee);
+    }
+
+    function burnFee() external onlyOwner {
+        require((block.timestamp + 1 weeks) > lastFeeBurnDate, "Last fee burn was less then  1 week ago");
+        etherPool = 0;
     }
 }
