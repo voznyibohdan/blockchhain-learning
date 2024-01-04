@@ -35,7 +35,6 @@ contract Token is IERC20, Ownable {
     event VotingEnded(uint256 endTime, uint256 price);
     event Burn(address indexed from, uint256 value);
 
-    // 0x4B20993Bc481177ec7E8f571ceCaE8A9e22C02db, 1, 5, 5
     constructor(address initialOwner, uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) Ownable(initialOwner) {
         _tokenPrice = initialTokenPrice;
         _minTokenAmount = initialMinTokenAmount;
