@@ -133,6 +133,7 @@ contract Token is IERC20, Ownable {
         require(!_isVotingInProgress, "Voting already in progress");
 
         _votingId++;
+        _voters[msg.sender] = _votingId;
         _isVotingInProgress = true;
         _votingEndTime = block.timestamp + _timeToVote;
         _prices[price] = Price({ votingId: _votingId, weight: _balances[msg.sender] });
