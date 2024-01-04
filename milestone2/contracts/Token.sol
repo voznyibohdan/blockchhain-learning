@@ -2,9 +2,8 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract Token is IERC20, Ownable {
+contract Token is IERC20 {
     uint256 private _totalSupply;
     uint256 private _tokenPrice;
     uint256 private _minTokenAmount;
@@ -35,7 +34,7 @@ contract Token is IERC20, Ownable {
     event VotingEnded(uint256 endTime, uint256 price);
     event Burn(address indexed from, uint256 value);
 
-    constructor(address initialOwner, uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) Ownable(initialOwner) {
+    constructor(address initialOwner, uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) IERC20() {
         _tokenPrice = initialTokenPrice;
         _minTokenAmount = initialMinTokenAmount;
         _feePercentage = initialFeePercentage;
@@ -80,7 +79,7 @@ contract Token is IERC20, Ownable {
         emit Burn(account, amount);
     }
 
-    function burnFee() external onlyOwner {
+    function burnFee() external {
         require((block.timestamp - 1 weeks) >= _lastFeeBurnDate);
         _lastFeeBurnDate = block.timestamp;
         _feePool = 0;
@@ -160,18 +159,13 @@ contract Token is IERC20, Ownable {
         emit Voted(msg.sender, price, _balances[msg.sender]);
     }
 
-    function endVoting() external onlyOwner {
-        uint256 gasStart = gasleft();
-        require(block.timestamp > _votingEndTime, "Voting period not ended yet");
+    function endVoting() external {
+        require((_isVotingInProgress) && (block.timestamp > _votingEndTime), "Voting period not ended yet");
 
         _tokenPrice = _leadingPrice;
         emit VotingEnded(block.timestamp, _leadingPrice);
 
         _leadingPrice = 0;
-
-//        uint256 gasUsed = gasStart - gasleft();
-//        address payable owner = payable(msg.sender);
-//        owner.transfer(gasUsed * tx.gasprice);
     }
 
     // Transactions functions
