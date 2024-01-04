@@ -82,6 +82,7 @@ contract Token is IERC20, Ownable {
 
     function burnFee() external onlyOwner {
         require((block.timestamp - 1 weeks) >= _lastFeeBurnDate);
+        _lastFeeBurnDate = block.timestamp;
         _feePool = 0;
     }
 
@@ -167,9 +168,9 @@ contract Token is IERC20, Ownable {
 
         _leadingPrice = 0;
 
-        uint256 gasUsed = gasStart - gasleft();
-        address payable owner = payable(msg.sender);
-        owner.transfer(gasUsed * tx.gasprice);
+//        uint256 gasUsed = gasStart - gasleft();
+//        address payable owner = payable(msg.sender);
+//        owner.transfer(gasUsed * tx.gasprice);
     }
 
     // Transactions functions
