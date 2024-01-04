@@ -43,7 +43,7 @@ contract Token is IERC20, Ownable {
 
     modifier onlyAfterVoting() {
         require(
-            (!_isVotingInProgress && (_voters[msg.sender] == _votingId)),
+            (!_isVotingInProgress && (_voters[msg.sender] != _votingId)),
             "Cant perform operation while voting is active"
         );
         _;
