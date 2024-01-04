@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -9,6 +10,7 @@ contract Token is IERC20, Ownable {
     uint256 private _minTokenAmount;
     uint256 private _etherPool;
     uint256 private _feePool;
+    uint256 private _feePercentage;
     uint256 private _lastFeeBurnDate = block.timestamp;
     uint256 private _buySellFeePercentage;
     uint256 private _leadingPrice;
@@ -33,7 +35,7 @@ contract Token is IERC20, Ownable {
     event VotingEnded(uint256 endTime, uint256 price);
     event Burn(address indexed from, uint256 value);
 
-    constructor(uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) {
+    constructor(address initialOwner, uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) Ownable(initialOwner) {
         _tokenPrice = initialTokenPrice;
         _minTokenAmount = initialMinTokenAmount;
         _feePercentage = initialFeePercentage;
@@ -137,13 +139,13 @@ contract Token is IERC20, Ownable {
         emit VotingStarted(block.timestamp, _votingEndTime);
     }
 
-    function vote(uint256 price) external canVote hasMinimumBalance(minTokenAmount) {
+    function vote(uint256 price) external hasMinimumBalance(_minTokenAmount) {
         require(_isVotingInProgress, "Voting has not started yet");
         require(_voters[msg.sender] != _votingId, "Already voted");
 
         _voters[msg.sender] = _votingId;
 
-        if (_prices[price] && (_prices[price].votingId == _votingId)) {
+        if (_prices[price].votingId == _votingId) {
             _prices[price].weight += _balances[msg.sender];
         } else {
             _prices[price] = Price({ votingId : _votingId, weight : _balances[msg.sender] });
@@ -153,7 +155,7 @@ contract Token is IERC20, Ownable {
             _leadingPrice = price;
         }
 
-        emit Voted(msg.sender, price, addressToBalance[msg.sender]);
+        emit Voted(msg.sender, price, _balances[msg.sender]);
     }
 
     function endVoting() external onlyOwner {
@@ -166,7 +168,8 @@ contract Token is IERC20, Ownable {
         _leadingPrice = 0;
 
         uint256 gasUsed = gasStart - gasleft();
-        msg.sender.transfer(gasUsed * tx.gasprice);
+        address payable owner = payable(msg.sender);
+        owner.transfer(gasUsed * tx.gasprice);
     }
 
     // Transactions functions
@@ -191,12 +194,11 @@ contract Token is IERC20, Ownable {
 
         _burn(msg.sender, amount);
         payable(msg.sender).transfer(earned);
-        emit TokensSold(msg.sender, amount);
     }
 
-    function _calculateCost(uint256 tokenAmount) private returns (uint256, uint256) {
-        uint256 ethCost = tokenAmount * tokenPrice;
-        uint256 fee = (ethCost * feePercentage) / 10_000;
+    function _calculateCost(uint256 tokenAmount) private view returns (uint256, uint256) {
+        uint256 ethCost = tokenAmount * _tokenPrice;
+        uint256 fee = (ethCost * _feePercentage) / 10_000;
         return (ethCost, fee);
     }
 }
