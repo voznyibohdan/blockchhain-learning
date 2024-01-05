@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 contract Proxy {
     address public implementation;
@@ -25,7 +25,7 @@ contract Proxy {
         implementation = _implementation;
     }
 
-    fallback() external payable {
+    function _fallback() private {
         address _impl = implementation;
         assembly {
             calldatacopy(0, 0, calldatasize())
@@ -39,5 +39,13 @@ contract Proxy {
                 return(0, returndatasize())
             }
         }
+    }
+
+    fallback() external payable {
+        _fallback();
+    }
+
+    receive() external payable {
+        _fallback();
     }
 }

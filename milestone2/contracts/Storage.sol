@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 contract Storage {
-    uint256 public totalSupply;
+    uint256 public tokenTotalSupply;
     uint256 public tokenPrice;
     uint256 public minTokenAmount;
     uint256 public etherPool;

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.20;
 
 import "./Storage.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract Implementation is Storage, IERC20 {
+abstract contract Implementation is Storage, IERC20 {
     constructor() IERC20() {}
 
     modifier onlyAfterVoting() {
@@ -17,7 +17,7 @@ contract Implementation is Storage, IERC20 {
 
     modifier hasMinimumBalance(uint256 percentage) {
         require(
-            balances[msg.sender] >= ((totalSupply * percentage) / 10000),
+            balances[msg.sender] >= ((tokenTotalSupply * percentage) / 10000),
             "Insufficient balance to execute this function"
         );
         _;
@@ -36,7 +36,7 @@ contract Implementation is Storage, IERC20 {
 
     // IERC20 Interface
     function totalSupply() external view returns(uint256) {
-        return totalSupply;
+        return tokenTotalSupply;
     }
 
     function balanceOf(address account) external view override returns (uint256) {
@@ -79,7 +79,7 @@ contract Implementation is Storage, IERC20 {
     // Storage.sol functions
     function _mint(address account, uint256 amount) private {
         balances[account] += amount;
-        totalSupply += amount;
+        tokenTotalSupply += amount;
 
         emit Transfer(address(0), account, amount);
     }
@@ -88,7 +88,7 @@ contract Implementation is Storage, IERC20 {
         require(balances[account] >= amount, "Insufficient balance for burning");
 
         balances[account] -= amount;
-        totalSupply -= amount;
+        tokenTotalSupply -= amount;
 
         emit Burn(account, amount);
     }
