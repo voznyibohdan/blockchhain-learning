@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-contract Storage {
+contract StorageContract {
     uint256 public tokenTotalSupply;
     uint256 public tokenPrice;
     uint256 public minTokenAmount;
@@ -27,7 +27,7 @@ contract Storage {
     mapping(address => uint256) public balances;
     mapping(address => mapping(address => uint256)) public allowances;
 
-    constructor(address initialOwner, uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) {
+    constructor(uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) {
         tokenPrice = initialTokenPrice;
         minTokenAmount = initialMinTokenAmount;
         feePercentage = initialFeePercentage;

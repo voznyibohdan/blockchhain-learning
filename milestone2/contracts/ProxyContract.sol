@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-contract Proxy {
+contract ProxyContract {
     address public implementation;
     address public owner;
 

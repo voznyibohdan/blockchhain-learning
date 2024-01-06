@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "./Storage.sol";
+import "./StorageContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-abstract contract Implementation is Storage, IERC20 {
-    constructor() IERC20() {}
-
+contract ImplContract is StorageContract, IERC20 {
     modifier onlyAfterVoting() {
         require(
             (!isVotingInProgress && (voters[msg.sender] != votingId)),
@@ -76,7 +74,7 @@ abstract contract Implementation is Storage, IERC20 {
         return true;
     }
 
-    // Storage.sol functions
+    // StorageContract.sol functions
     function _mint(address account, uint256 amount) private {
         balances[account] += amount;
         tokenTotalSupply += amount;
