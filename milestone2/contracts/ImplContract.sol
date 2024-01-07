@@ -52,8 +52,8 @@ contract ImplContract is IERC20 {
     }
 
     modifier validDestination(address to) {
-        require(to != address(0x0));
-        require(to != address(this));
+        require(to != address(0x0), "Zero address");
+        require(to != address(this), "Zero address");
         _;
     }
 
