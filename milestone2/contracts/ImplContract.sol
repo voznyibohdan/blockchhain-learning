@@ -1,10 +1,40 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "./StorageContract.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract ImplContract is StorageContract, IERC20 {
+contract ImplContract is IERC20 {
+    uint256 public tokenTotalSupply;
+    uint256 public tokenPrice;
+    uint256 public minTokenAmount;
+    uint256 public etherPool;
+    uint256 public feePool;
+    uint256 public feePercentage;
+    uint256 public lastFeeBurnDate = block.timestamp;
+    uint256 public buySellFeePercentage;
+    uint256 public leadingPrice;
+    uint256 public votingId = 1;
+    uint256 public votingEndTime;
+    uint256 public constant timeToVote = 30 minutes;
+
+    bool public isVotingInProgress;
+
+    struct Price {
+        uint256 votingId;
+        uint256 weight;
+    }
+
+    mapping(uint256 => Price) public prices;
+    mapping(address => uint256) public voters;
+    mapping(address => uint256) public balances;
+    mapping(address => mapping(address => uint256)) public allowances;
+
+    constructor(uint256 initialTokenPrice, uint256 initialMinTokenAmount, uint256 initialFeePercentage) {
+        tokenPrice = initialTokenPrice;
+        minTokenAmount = initialMinTokenAmount;
+        feePercentage = initialFeePercentage;
+    }
+
     modifier onlyAfterVoting() {
         require(
             (!isVotingInProgress && (voters[msg.sender] != votingId)),
