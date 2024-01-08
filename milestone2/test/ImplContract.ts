@@ -1,8 +1,8 @@
-import { expect } from 'chai';
-import { ethers } from 'hardhat';
-import { loadFixture } from '@nomicfoundation/hardhat-toolbox/network-helpers';
-import { ImplContract } from '../typechain-types';
-import { LogDescription } from 'ethers';
+import {expect} from 'chai';
+import {ethers} from 'hardhat';
+import {loadFixture} from '@nomicfoundation/hardhat-toolbox/network-helpers';
+import {ImplContract} from '../typechain-types';
+import {LogDescription} from 'ethers';
 
 describe('Implementation Contract', () => {
     const zeroAddress = '0x0000000000000000000000000000000000000000';
@@ -37,7 +37,7 @@ describe('Implementation Contract', () => {
     }
 
     async function buy(contract: ImplContract, account: any, amount: number): Promise<void> {
-        await contract.connect(account).buy(amount, { value: 100 });
+        await contract.connect(account).buy(amount, {value: 100});
     }
 
     async function approve(contract: ImplContract, owner: any, spenser: string, amount: number): Promise<void> {
@@ -87,30 +87,30 @@ describe('Implementation Contract', () => {
     });
 
     describe('TotalSupply', () => {
-       it('Should return correct total supply', async () => {
-           const { implContract, userAccount } = await loadFixture(deploy);
-           await buy(implContract, userAccount, 10);
-           expect(await  implContract.totalSupply()).to.equal(10);
-       });
+        it('Should return correct total supply', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            await buy(implContract, userAccount, 10);
+            expect(await implContract.totalSupply()).to.equal(10);
+        });
     });
 
     describe('BalanceOf', () => {
         it('Should return correct user balance', async () => {
-            const { implContract, userAccount } = await loadFixture(deploy);
+            const {implContract, userAccount} = await loadFixture(deploy);
             await buy(implContract, userAccount, 10);
-            expect(await  implContract.balanceOf(userAccount.address)).to.equal(10);
+            expect(await implContract.balanceOf(userAccount.address)).to.equal(10);
         });
     });
 
     describe('Transfer', () => {
         it('Should revert', async () => {
-            const { implContract, fromAccount } = await loadFixture(deploy);
+            const {implContract, fromAccount} = await loadFixture(deploy);
             await expect(implContract.connect(fromAccount).transfer(zeroAddress, 1)).to.revertedWith('Zero address');
             await expect(implContract.transfer(fromAccount.address, 1)).to.be.revertedWith('Insufficient balance');
         });
 
         it('Should change user balances, emit Transfer event', async () => {
-            const { implContract, fromAccount, toAccount } = await loadFixture(deploy);
+            const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
             await buy(implContract, fromAccount, 10);
             await implContract.connect(fromAccount).transfer(toAccount, 5);
 
@@ -124,7 +124,7 @@ describe('Implementation Contract', () => {
 
     describe('Allowance', () => {
         it('Should return correct allowance', async () => {
-            const { implContract, fromAccount, toAccount } = await loadFixture(deploy);
+            const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
             await approve(implContract, fromAccount, toAccount.address, 50);
             expect(await implContract.allowances(fromAccount.address, toAccount.address)).to.equal(50);
         });
@@ -132,12 +132,12 @@ describe('Implementation Contract', () => {
 
     describe('Approve', () => {
         it('Should revert', async () => {
-            const { implContract } = await loadFixture(deploy);
+            const {implContract} = await loadFixture(deploy);
             await expect(implContract.approve(zeroAddress, 10)).to.revertedWith('Zero address');
         });
 
         it('Should set correct allowance and emit Approval event', async () => {
-            const { implContract, fromAccount, toAccount } = await loadFixture(deploy);
+            const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
             await approve(implContract, fromAccount, toAccount.address, 50);
             expect(await implContract.allowances(fromAccount.address, toAccount.address)).to.equal(50);
             await expect(implContract.connect(fromAccount).approve(toAccount.address, 1))
@@ -148,14 +148,14 @@ describe('Implementation Contract', () => {
 
     describe('TransferFrom', () => {
         it('Should revert', async () => {
-            const { implContract, fromAccount, toAccount } = await loadFixture(deploy);
+            const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
             await expect(implContract.transferFrom(fromAccount.address, toAccount.address, 10)).to.revertedWith('Insufficient balance');
             await buy(implContract, fromAccount, 10);
             await expect(implContract.transferFrom(fromAccount.address, toAccount.address, 10)).to.revertedWith('Insufficient allowance');
         });
 
-        it('Should change balances, change allowance, emit Transfer event', async() => {
-            const { implContract, fromAccount, toAccount } = await loadFixture(deploy);
+        it('Should change balances, change allowance, emit Transfer event', async () => {
+            const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
             await buy(implContract, fromAccount, 10);
             await approve(implContract, fromAccount, fromAccount.address, 5);
             await implContract.connect(fromAccount).transferFrom(fromAccount.address, toAccount.address, 1);
@@ -172,16 +172,17 @@ describe('Implementation Contract', () => {
 
     describe('StartVoting', () => {
         it('Should revert', async () => {
-            const { implContract, userAccount, fromAccount } = await loadFixture(deploy);
+            const {implContract, userAccount, fromAccount} = await loadFixture(deploy);
             await expect(implContract.startVoting(1)).to.revertedWith('No tokens');
             await buy(implContract, userAccount, 100);
-            await expect(implContract.connect(fromAccount).startVoting(1)).to.revertedWith('Insufficient balance to execute this function');
+            await expect(implContract.connect(fromAccount).startVoting(1))
+                .to.revertedWith('Insufficient balance to execute this function');
             await implContract.startVoting(1);
             await expect(implContract.startVoting(1)).to.revertedWith('Voting already in progress');
         });
 
         it('Should update votingId, voters, voting state, voting prices, emit VotingStarted event', async () => {
-            const { implContract, userAccount } = await loadFixture(deploy);
+            const {implContract, userAccount} = await loadFixture(deploy);
 
             const newVotingId = 2;
 
@@ -199,6 +200,40 @@ describe('Implementation Contract', () => {
             expect(newPrice.votingId).to.equal(newVotingId);
             expect(newPrice.weight).to.equal(userVotingWeight);
             expect(expectedEvent.name).to.equal('VotingStarted');
+        });
+    });
+
+    describe('Vote', () => {
+        it('Should revert', async () => {
+            const {implContract, userAccount, fromAccount} = await loadFixture(deploy);
+            await buy(implContract, userAccount, 100);
+            await expect(implContract.connect(fromAccount).vote(1))
+                .to.revertedWith('Insufficient balance to execute this function');
+            await buy(implContract, fromAccount, 100);
+            await expect(implContract.vote(1)).to.revertedWith('Voting has not started yet');
+            await startVoting(implContract, userAccount);
+            await expect(implContract.vote(1)).to.revertedWith('Already voted');
+        });
+
+        it('Should update voters, set voting price, emit Voted event', async () => {
+            const {implContract, userAccount, fromAccount, toAccount} = await loadFixture(deploy);
+            await buy(implContract, userAccount, 100);
+            await buy(implContract, fromAccount, 100);
+            await buy(implContract, toAccount, 100);
+            await startVoting(implContract, userAccount);
+
+            const votingId = 2;
+            const proposedPrice = 20;
+            await implContract.connect(fromAccount).vote(proposedPrice);
+            const newVotingPrice = await implContract.prices(proposedPrice);
+
+            expect(await implContract.voters(fromAccount.address)).to.equal(votingId);
+            expect(newVotingPrice.votingId).to.eq(votingId);
+            expect(newVotingPrice.weight).to.eq(100);
+            expect(await implContract.leadingPrice()).to.eq(proposedPrice);
+            await expect(implContract.connect(toAccount).vote(1))
+                .emit(implContract, 'Voted')
+                .withArgs(toAccount.address, 1, 100);
         });
     });
 });
