@@ -44,8 +44,9 @@ contract ImplContract is IERC20 {
     }
 
     modifier hasMinimumBalance(uint256 percentage) {
+        require(tokenTotalSupply > 0, "No tokens");
         require(
-            balances[msg.sender] >= ((tokenTotalSupply * percentage) / 10000),
+            (((balances[msg.sender] * 100) / tokenTotalSupply) * 100) >= percentage,
             "Insufficient balance to execute this function"
         );
         _;

@@ -2,6 +2,7 @@ import { expect } from 'chai';
 import { ethers } from 'hardhat';
 import { loadFixture } from '@nomicfoundation/hardhat-toolbox/network-helpers';
 import { ImplContract } from '../typechain-types';
+import { LogDescription } from 'ethers';
 
 describe('Implementation Contract', () => {
     const zeroAddress = '0x0000000000000000000000000000000000000000';
@@ -45,6 +46,29 @@ describe('Implementation Contract', () => {
 
     async function transferFrom(contract: ImplContract, owner: any, from: string, to: string) {
         await contract.connect(owner).transferFrom(from, to, 5);
+    }
+
+    async function startVoting(contract: ImplContract, user: any) {
+        const userVotingWeight = 10;
+        const votingPrice = 5;
+
+        await buy(contract, user, userVotingWeight);
+        const transaction = await contract.connect(user).startVoting(votingPrice);
+
+        const receipt = await transaction.wait();
+        // @ts-ignore
+        const expectedEvent = contract.interface.parseLog((receipt).logs[0]) as LogDescription;
+
+        const newPrice = await contract.prices(votingPrice);
+        const timestamp = await ethers.provider.getBlock('latest');
+        const expectedEndTime = Number((await contract.timeToVote())) + (timestamp?.timestamp as number);
+
+        return {
+            userVotingWeight,
+            expectedEndTime,
+            newPrice,
+            expectedEvent
+        }
     }
 
     describe('Initial state', () => {
@@ -139,6 +163,7 @@ describe('Implementation Contract', () => {
             expect(await implContract.balanceOf(fromAccount.address)).to.equal(9);
             expect(await implContract.balanceOf(toAccount.address)).to.equal(1);
             expect(await implContract.allowances(fromAccount.address, fromAccount.address)).to.equal(4);
+
             await expect(implContract.connect(fromAccount).transferFrom(fromAccount.address, toAccount.address, 1))
                 .emit(implContract, 'Transfer')
                 .withArgs(fromAccount.address, toAccount.address, 1);
@@ -146,34 +171,34 @@ describe('Implementation Contract', () => {
     });
 
     describe('StartVoting', () => {
-
-
-       it('Should set new votingId', async () => {
-
-       });
-
-        it('Should add user to voters list', async () => {
-
+        it('Should revert', async () => {
+            const { implContract, userAccount, fromAccount } = await loadFixture(deploy);
+            await expect(implContract.startVoting(1)).to.revertedWith('No tokens');
+            await buy(implContract, userAccount, 100);
+            await expect(implContract.connect(fromAccount).startVoting(1)).to.revertedWith('Insufficient balance to execute this function');
+            await implContract.startVoting(1);
+            await expect(implContract.startVoting(1)).to.revertedWith('Voting already in progress');
         });
 
-        it('Should set voting to in progress state', async () => {
+        it('Should update votingId, voters, voting state, voting prices, emit VotingStarted event', async () => {
+            const { implContract, userAccount } = await loadFixture(deploy);
 
-        });
+            const newVotingId = 2;
 
-        it('Should set voting end time', async () => {
+            const {
+                userVotingWeight,
+                expectedEndTime,
+                newPrice,
+                expectedEvent
+            } = await startVoting(implContract, userAccount);
 
-        });
-
-        it('Should set new voting price', async () => {
-
-        });
-
-        it('Should emit voting started event', async () => {
-
-        });
-
-        it('Should fail if voting already in progress', async () => {
-
+            expect(await implContract.votingId()).to.equal(newVotingId);
+            expect(await implContract.voters(userAccount.address)).to.equal(newVotingId);
+            expect(await implContract.isVotingInProgress()).to.equal(true);
+            expect(await implContract.votingEndTime()).to.equal(expectedEndTime);
+            expect(newPrice.votingId).to.equal(newVotingId);
+            expect(newPrice.weight).to.equal(userVotingWeight);
+            expect(expectedEvent.name).to.equal('VotingStarted');
         });
     });
 });
