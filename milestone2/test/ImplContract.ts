@@ -32,20 +32,12 @@ describe('Implementation Contract', () => {
         };
     }
 
-    async function getUserBalance(contract: ImplContract, userAddress: string): Promise<bigint> {
-        return await contract.balanceOf(userAddress);
-    }
-
     async function buy(contract: ImplContract, account: any, amount: number): Promise<void> {
         await contract.connect(account).buy(amount, {value: 100});
     }
 
     async function approve(contract: ImplContract, owner: any, spenser: string, amount: number): Promise<void> {
         await contract.connect(owner).approve(spenser, amount);
-    }
-
-    async function transferFrom(contract: ImplContract, owner: any, from: string, to: string) {
-        await contract.connect(owner).transferFrom(from, to, 5);
     }
 
     async function startVoting(contract: ImplContract, user: any) {
@@ -126,8 +118,7 @@ describe('Implementation Contract', () => {
     describe('Allowance', () => {
         it('Should return correct allowance', async () => {
             const {implContract, fromAccount, toAccount} = await loadFixture(deploy);
-            await approve(implContract, fromAccount, toAccount.address, 50);
-            expect(await implContract.allowances(fromAccount.address, toAccount.address)).to.equal(50);
+            expect(await implContract.allowance(fromAccount.address, toAccount.address)).to.equal(0);
         });
     });
 
@@ -233,9 +224,11 @@ describe('Implementation Contract', () => {
             expect(newVotingPrice.votingId).to.eq(votingId);
             expect(newVotingPrice.weight).to.eq(100);
             expect(await implContract.leadingPrice()).to.eq(proposedPrice);
-            await expect(implContract.connect(toAccount).vote(1))
+            await expect(implContract.connect(toAccount).vote(proposedPrice))
                 .emit(implContract, 'Voted')
-                .withArgs(toAccount.address, 1, 100);
+                .withArgs(toAccount.address, proposedPrice, 100);
+            const updatedSameVitingPrice = await implContract.prices(20);
+            expect(updatedSameVitingPrice.weight).to.equal(200);
         });
     });
 
@@ -299,7 +292,24 @@ describe('Implementation Contract', () => {
 
     describe('BurnFee', () => {
         it('Should revert', async () => {
+            const {implContract} = await loadFixture(deploy);
+            await expect(implContract.burnFee())
+                .to.revertedWith('A week has not yet passed since the last burning');
+        });
 
+        it('Should set correct lastFeeBurnDate, set feePool to zero', async () => {
+            const { implContract } = await loadFixture(deploy);
+
+            const week = 60 * 60 * 24 * 7;
+            await ethers.provider.send('evm_increaseTime', [week]);
+            await implContract.burnFee();
+
+            const timestamp = await ethers.provider.getBlock('latest');
+            const updatedLastFeeBurnDate = await implContract.lastFeeBurnDate();
+            expect(updatedLastFeeBurnDate).to.equal(timestamp?.timestamp);
+
+            const updatedFeePool = await implContract.feePool();
+            expect(updatedFeePool).to.equal(0);
         });
     });
 });
