@@ -137,6 +137,7 @@ contract ImplContract is IERC20 {
         isVotingInProgress = true;
         votingEndTime = block.timestamp + timeToVote;
         prices[price] = Price({ votingId: votingId, weight: balances[msg.sender] });
+        leadingPrice = price;
 
         emit VotingStarted(block.timestamp, votingEndTime);
     }
@@ -161,7 +162,8 @@ contract ImplContract is IERC20 {
     }
 
     function endVoting() external {
-        require((isVotingInProgress) && (block.timestamp > votingEndTime), "Voting period not ended yet");
+        require(isVotingInProgress, "Voting is not in progress");
+        require(block.timestamp > votingEndTime, "Voting period not ended yet");
 
         tokenPrice = leadingPrice;
         emit VotingEnded(block.timestamp, leadingPrice);

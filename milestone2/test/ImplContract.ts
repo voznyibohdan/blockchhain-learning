@@ -64,6 +64,7 @@ describe('Implementation Contract', () => {
         const expectedEndTime = Number((await contract.timeToVote())) + (timestamp?.timestamp as number);
 
         return {
+            votingPrice,
             userVotingWeight,
             expectedEndTime,
             newPrice,
@@ -181,7 +182,7 @@ describe('Implementation Contract', () => {
             await expect(implContract.startVoting(1)).to.revertedWith('Voting already in progress');
         });
 
-        it('Should update votingId, voters, voting state, voting prices, emit VotingStarted event', async () => {
+        it('Should update votingId, voters, voting state, voting prices, leadingPrice, emit VotingStarted event', async () => {
             const {implContract, userAccount} = await loadFixture(deploy);
 
             const newVotingId = 2;
@@ -190,7 +191,8 @@ describe('Implementation Contract', () => {
                 userVotingWeight,
                 expectedEndTime,
                 newPrice,
-                expectedEvent
+                expectedEvent,
+                votingPrice
             } = await startVoting(implContract, userAccount);
 
             expect(await implContract.votingId()).to.equal(newVotingId);
@@ -199,6 +201,7 @@ describe('Implementation Contract', () => {
             expect(await implContract.votingEndTime()).to.equal(expectedEndTime);
             expect(newPrice.votingId).to.equal(newVotingId);
             expect(newPrice.weight).to.equal(userVotingWeight);
+            expect(await implContract.leadingPrice()).to.equal(votingPrice);
             expect(expectedEvent.name).to.equal('VotingStarted');
         });
     });
@@ -217,10 +220,9 @@ describe('Implementation Contract', () => {
 
         it('Should update voters, set voting price, emit Voted event', async () => {
             const {implContract, userAccount, fromAccount, toAccount} = await loadFixture(deploy);
-            await buy(implContract, userAccount, 100);
+            await startVoting(implContract, userAccount);
             await buy(implContract, fromAccount, 100);
             await buy(implContract, toAccount, 100);
-            await startVoting(implContract, userAccount);
 
             const votingId = 2;
             const proposedPrice = 20;
@@ -234,6 +236,25 @@ describe('Implementation Contract', () => {
             await expect(implContract.connect(toAccount).vote(1))
                 .emit(implContract, 'Voted')
                 .withArgs(toAccount.address, 1, 100);
+        });
+    });
+
+    describe('EndVoting', () => {
+        it('Should revert', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            await expect(implContract.endVoting()).to.revertedWith('Voting is not in progress');
+            await startVoting(implContract, userAccount);
+            await expect(implContract.endVoting()).to.revertedWith('Voting period not ended yet');
+        });
+
+        it('Should set new tokenPrice, set leadingPrice to zero, VotingEnded', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            const { votingPrice } = await startVoting(implContract, userAccount);
+            await ethers.provider.send('evm_increaseTime', [3600]);
+            await expect(implContract.endVoting())
+                .emit(implContract, 'VotingEnded');
+            expect(await implContract.tokenPrice()).to.equal(votingPrice);
+            expect(await implContract.leadingPrice()).to.equal(0);
         });
     });
 });
