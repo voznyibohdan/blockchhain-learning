@@ -249,12 +249,38 @@ describe('Implementation Contract', () => {
 
         it('Should set new tokenPrice, set leadingPrice to zero, VotingEnded', async () => {
             const {implContract, userAccount} = await loadFixture(deploy);
-            const { votingPrice } = await startVoting(implContract, userAccount);
+            const {votingPrice} = await startVoting(implContract, userAccount);
             await ethers.provider.send('evm_increaseTime', [3600]);
             await expect(implContract.endVoting())
                 .emit(implContract, 'VotingEnded');
             expect(await implContract.tokenPrice()).to.equal(votingPrice);
             expect(await implContract.leadingPrice()).to.equal(0);
+        });
+    });
+
+    describe('Buy', () => {
+        it('Should revert', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            await expect(implContract.connect(userAccount).buy(10, {value: 9}))
+                .to.revertedWith('Insufficient funds sent');
+        });
+
+        it('Should increase the users balance, total amount, etherPool, feePool, emit transfer event', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            await expect(implContract.connect(userAccount).buy(10, {value: 10}))
+                .emit(implContract, 'Transfer')
+                .withArgs(zeroAddress, userAccount.address, 10);
+
+            expect(await implContract.totalSupply()).to.equal(10);
+            expect(await implContract.balances(userAccount.address)).to.equal(10);
+            expect(await implContract.etherPool()).to.equal(10);
+            expect(await implContract.feePool()).to.equal(0);
+        });
+    });
+
+    describe('Sell', () => {
+        it('Should revert', async () => {
+            const {implContract} = await loadFixture(deploy);
         });
     });
 });
