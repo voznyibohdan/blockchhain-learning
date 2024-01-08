@@ -281,6 +281,25 @@ describe('Implementation Contract', () => {
     describe('Sell', () => {
         it('Should revert', async () => {
             const {implContract} = await loadFixture(deploy);
+            await expect(implContract.sell(10)).to.revertedWith('Insufficient tokens');
+        });
+
+        it('Should decrease etherPool, user amount, tokenTotalSupply, emit Burn event', async () => {
+            const {implContract, userAccount} = await loadFixture(deploy);
+            await buy(implContract, userAccount, 10);
+
+            await expect(implContract.sell(5))
+                .emit(implContract, 'Burn')
+                .withArgs(userAccount.address, 5);
+            expect(await implContract.totalSupply()).to.equal(5);
+            expect(await implContract.etherPool()).to.equal(5);
+            expect(await implContract.balances(userAccount.address)).to.equal(5);
+        });
+    });
+
+    describe('BurnFee', () => {
+        it('Should revert', async () => {
+
         });
     });
 });

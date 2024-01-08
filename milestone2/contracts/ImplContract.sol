@@ -114,8 +114,6 @@ contract ImplContract is IERC20 {
     }
 
     function _burn(address account, uint256 amount) private {
-        require(balances[account] >= amount, "Insufficient balance for burning");
-
         balances[account] -= amount;
         tokenTotalSupply -= amount;
 
@@ -123,7 +121,7 @@ contract ImplContract is IERC20 {
     }
 
     function burnFee() external {
-        require((block.timestamp - 1 weeks) >= lastFeeBurnDate);
+        require((block.timestamp - 1 weeks) >= lastFeeBurnDate, "A week has not yet passed since the last burning");
         lastFeeBurnDate = block.timestamp;
         feePool = 0;
     }
