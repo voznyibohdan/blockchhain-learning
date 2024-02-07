@@ -9,14 +9,14 @@ import {
 	avalanche,
 	bsc,
 	fantom,
-	gnosis,
+	gnosis, localhost,
 	mainnet,
 	optimism,
 	polygon,
-} from "wagmi/chains";
+} from 'wagmi/chains';
 
 const fork: Chain = {
-	...mainnet,
+	...localhost,
 	id: 31337,
 	rpcUrls: {
 		default: {
