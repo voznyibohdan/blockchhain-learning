@@ -1,15 +1,9 @@
 import Head from "next/head";
 import Image from "next/image";
 import styles from "@/styles/Home.module.css";
-import { useEffect, useState } from 'react';
-import { useAccount, useConnect, useContractRead, useNetwork } from 'wagmi';
-import { fetchBalance, getContract, readContract } from '@wagmi/core';
-import { boxAbi } from '@/abi/box.abi';
-
-import abig from '../abi/GovernorContract.json'
-
-import { governorContractAbi } from '@/abi/governorContract.abi';
+import { ChangeEvent, useState } from 'react';
 import { Propose } from '@/components/propose';
+import { Queue } from '@/components/queue';
 export default function Home() {
 	const [isNetworkSwitchHighlighted, setIsNetworkSwitchHighlighted] = useState(false);
 	const [isConnectHighlighted, setIsConnectHighlighted] = useState(false);
@@ -19,20 +13,25 @@ export default function Home() {
 		setIsConnectHighlighted(false);
 	};
 
-	// const { data, isError, isLoading } = useContractRead({
-	// 	address: '0xcf7ed3acca5a467e9e704c703e8d87f634fb0fc9',
-	// 	abi: governorContractAbi,
-	// 	functionName: 'vot',
-	// 	chainId: 31337
-	// });
+	const [propose, setPropose] = useState({value: 0, description: ''});
+	const [isProposeValid, setIsProposeValid] = useState(false);
+	const [showQueue, setShowQueue] = useState(false);
 
-	// const { data, isError, isLoading } = useContractRead({
-	// 	address: '0x31403b1e52051883f2Ce1B1b4C89f36034e1221D',
-	// 	abi: boxAbi,
-	// 	functionName: 'retrieve',
-	// 	chainId: 31337
-	// });
+	const handleConfirmProposal = () => {
+		setIsProposeValid(true);
+	}
 
+	const handleShowQueue = () => {
+		setShowQueue(true);
+	}
+
+	const handleProposedValue = (event: ChangeEvent<HTMLInputElement>) => {
+		setPropose((state) => ({value: parseInt(event.target.value), description: state.description }));
+	}
+
+	const handleProposedDescription = (event: ChangeEvent<HTMLInputElement>) => {
+		setPropose((state) => ({value: state.value, description: event.target.value }));
+	}
 
 	return (
 		<>
@@ -92,7 +91,24 @@ export default function Home() {
 				</div>
 			</header>
 			<main className={styles.main}>
-				<Propose />
+				<div className={styles.proposeContainer}>
+					<label>
+						Proposed value
+						<input type="number" onChange={handleProposedValue} value={propose.value}/>
+					</label>
+					<label>
+						Propose description
+						<input type="text" onChange={handleProposedDescription} value={propose.description} />
+					</label>
+					<button onClick={handleConfirmProposal}>Create propose</button>
+				</div>
+				<br/>
+				<br/>
+				{isProposeValid && <Propose value={propose.value} description={propose.description} />}
+				<br/>
+				<br/>
+				<button onClick={handleShowQueue}>Show queue</button>
+				{showQueue && <Queue />}
 			</main>
 		</>
 	);

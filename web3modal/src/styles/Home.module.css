@@ -1,14 +1,11 @@
 .main {
-	display: grid;
-	place-items: center;
-	height: 100%;
-	background: linear-gradient(
-			to bottom,
-			var(--color-bg),
-			transparent,
-			var(--color-bg)
-		),
-		radial-gradient(circle, transparent 0%, var(--color-bg) 70%);
+	padding: 70px 20px;
+}
+
+.proposeContainer {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
 }
 
 .wrapper {
